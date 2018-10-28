@@ -216,9 +216,16 @@ if __name__ == "__main__":
     spi = SavedPlacesImporter(args)
     spi.process()
 
-# TODO:
-# Check for installed stuff!!!
-# requirements.txt
-# venv
-# doc (synopsis, requirements, `$ firefox -marionette`)
-# count how many were added / not added / failure
+# TODO
+#
+# Check if Marionette is installed?
+# Check if `localhost` Marionette connection can be established?
+# Add a `requirements.txt`
+# Add a venv description?
+# Write README (Synopsis, Requirements, Usage, `$ firefox -marionette`)
+# Add inline documentation
+# Add timing
+# Add CSV reading
+# Add wait / throttling between requests
+# Refactor Marionette code to _not_ check if bookmark added (we do this elsewhere now)
+# Reverse engineer actual API calls?
