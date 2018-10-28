@@ -229,3 +229,10 @@ if __name__ == "__main__":
 # Add wait / throttling between requests
 # Refactor Marionette code to _not_ check if bookmark added (we do this elsewhere now)
 # Reverse engineer actual API calls?
+#
+# URLs
+#
+# https://en.wikipedia.org/wiki/GeoJSON
+# https://web.archive.org/web/20111206070337/http://www.mmartins.com/mmartins/googlebookmarksapi/
+# https://marionette-client.readthedocs.io/en/latest/index.html
+# https://www.google.com/bookmarks/
