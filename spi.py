@@ -5,6 +5,8 @@ import argparse
 import json
 import logging
 
+from xml.etree.cElementTree import XML
+
 from marionette_driver.marionette import Marionette
 from marionette_driver import By, Wait, expected
 from marionette_driver.errors import NoSuchElementException, TimeoutException
@@ -47,10 +49,18 @@ class SavedPlacesImporter:
         self.dry_run = args.dry_run
         # Marionette
         self.client = None
+        # Existing bookmarks LUT
+        self.bookmarks = set()
 
     def init_ff(self):
         self.client = Marionette(host="localhost", port=2828)
         self.client.start_session()
+
+    def get_existing_bookmarks(self):
+        self.client.navigate("https://www.google.com/bookmarks/?output=xml&num=10000")
+        root = XML(self.client.page_source.encode("utf-8"))
+        for bookmark in root[0]:
+            self.bookmarks.add(bookmark[1].text)
 
     def save_button_contains_correct_text_save(self, *args):
         save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
@@ -140,6 +150,10 @@ class SavedPlacesImporter:
         if not self.dry_run:
             self.init_ff()
 
+        if not self.dry_run:
+            self.get_existing_bookmarks()
+            self.logger.info(u" > Found {} existing bookmarks {}".format(len(self.bookmarks), self.success_symbol))
+
         # Add the features
         i = 1
         nums = {
@@ -152,7 +166,11 @@ class SavedPlacesImporter:
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
             else:
-                ret = self.add_feature(feature)
+                if feature not in self.bookmarks:
+                    ret = self.add_feature(feature)
+                else:
+                    ret = ADD_FEATURE_ALREADY_ADDED
+
                 if ret == ADD_FEATURE_SUCCESS:
                     ret_string = self.success_symbol
                     nums["success"] += 1
@@ -202,5 +220,5 @@ if __name__ == "__main__":
 # Check for installed stuff!!!
 # requirements.txt
 # venv
-# doc (synopsis, requirements)
+# doc (synopsis, requirements, `$ firefox -marionette`)
 # count how many were added / not added / failure
