@@ -1,0 +1,57 @@
+{
+  "type" : "FeatureCollection",
+  "features" : [ {
+    "geometry" : {
+      "coordinates" : [ 132.4531578, 34.3915027 ],
+      "type" : "Point"
+    },
+    "properties" : {
+      "Google Maps URL" : "http://maps.google.com/?cid=17379504698839695744",
+      "Location" : {
+        "Address" : "1-2 Nakajimacho, Naka Ward, Hiroshima, Hiroshima Prefecture 730-0811, Japan",
+        "Business Name" : "Hiroshima Peace Memorial Museum",
+        "Country Code" : "JP",
+        "Geo Coordinates" : {
+          "Latitude" : "34.3915027",
+          "Longitude" : "132.4531578"
+        }
+      },
+      "Published" : "2018-10-27T14:14:02Z",
+      "Title" : "Hiroshima Peace Memorial Museum",
+      "Updated" : "2018-10-27T14:14:02Z"
+    },
+    "type" : "Feature"
+  }, {
+    "geometry" : {
+      "coordinates" : [ 132.311404, 34.279660 ],
+      "type" : "Point"
+    },
+    "properties" : {
+      "Google Maps URL" : "http://maps.google.com/?q=Itsukushima,+Miyajimacho,+Hatsukaichi,+Hiroshima+Prefecture+739-0588,+Japan&ftid=0x355ab6cf888dc919:0xc91f62ebee004301",
+      "Location" : {
+        "Latitude" : "34.279660",
+        "Longitude" : "132.311404"
+      },
+      "Published" : "2018-10-27T14:13:25Z",
+      "Title" : "Itsukushima, Miyajimacho, Hatsukaichi, Hiroshima Prefecture 739-0588, Japan",
+      "Updated" : "2018-10-27T14:13:25Z"
+    },
+    "type" : "Feature"
+  }, {
+    "geometry" : {
+      "coordinates" : [ 135.587461, 34.212686 ],
+      "type" : "Point"
+    },
+    "properties" : {
+      "Google Maps URL" : "http://maps.google.com/?q=Koyasan,+K%C5%8Dya,+Ito+District,+Wakayama+Prefecture+648-0211,+Japan&ftid=0x60072760fd70987d:0xa291bb22d7c5beb7",
+      "Location" : {
+        "Latitude" : "34.212686",
+        "Longitude" : "135.587461"
+      },
+      "Published" : "2018-10-27T14:11:37Z",
+      "Title" : "Koyasan, Kōya, Ito District, Wakayama Prefecture 648-0211, Japan",
+      "Updated" : "2018-10-27T14:11:37Z"
+    },
+    "type" : "Feature"
+  } ]
+}
