@@ -142,6 +142,12 @@ class SavedPlacesImporter:
 
         # Add the features
         i = 1
+        nums = {
+            "success": 0,
+            "failure": 0,
+            "already_added": 0,
+            "unknown_error": 0,
+        }
         for feature in urls:
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
@@ -149,14 +155,23 @@ class SavedPlacesImporter:
                 ret = self.add_feature(feature)
                 if ret == ADD_FEATURE_SUCCESS:
                     ret_string = self.success_symbol
+                    nums["success"] += 1
                 elif ret == ADD_FEATURE_FAILURE:
                     ret_string = self.failure_symbol
+                    nums["failure"] += 1
                 elif ret == ADD_FEATURE_ALREADY_ADDED:
                     ret_string = u"-"
+                    nums["already_added"] += 1
                 elif ret == ADD_FEATURE_UNKNOWN_ERROR:
                     ret_string = u"?"
+                    nums["unknown_error"] += 1
                 self.logger.info(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
             i += 1
+        self.logger.debug(u" > Summary:")
+        self.logger.debug(u" > Success: {:3d}".format(nums["success"]))
+        self.logger.debug(u" > Failure: {:3d}".format(nums["failure"]))
+        self.logger.debug(u" > Already added: {:3d}".format(nums["already_added"]))
+        self.logger.debug(u" > Unknown error: {:3d}".format(nums["unknown_error"]))
 
 
 if __name__ == "__main__":
