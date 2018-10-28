@@ -107,6 +107,13 @@ class SavedPlacesImporter:
         else:
             self.logger.info(u" > Found {} features to import {}".format(num_features, self.success_symbol))
 
+        # Add the features
+        for feature in urls:
+            if self.dry_run:
+                self.logger.info(u" > [DRY RUN] Adding feature {}".format(feature))
+            else:
+                pass
+
 
 if __name__ == "__main__":
     # Declare the arguments
