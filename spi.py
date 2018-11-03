@@ -47,6 +47,7 @@ class SavedPlacesImporter:
         # the passed arguments
         self.import_file = args.import_file
         self.dry_run = args.dry_run
+        self.compare = args.compare
         # Marionette
         self.client = None
         # Existing bookmarks LUT
@@ -126,11 +127,16 @@ class SavedPlacesImporter:
         # Start processing
         self.logger.info(u" > Start of {}".format(APP_NAME))
         self.logger.debug(u" > dry_run: {}".format(self.dry_run))
+        self.logger.debug(u" > compare: {}".format(self.compare))
         self.logger.debug(u" > import_file: {}".format(self.import_file))
 
         # Check arguments
         if not self.import_file.endswith("csv") and not self.import_file.endswith("json"):
             self.logger.error(u" > [ERROR] Unknown file format supplied {}".format(self.failure_symbol))
+            return
+        if self.dry_run and self.compare:
+            self.logger.error(u" > [ERROR] Please select either '--dry_run' or '--compare' {}".format(self.failure_symbol))
+            return
 
         # Parse GeoJSON
         if self.import_file.endswith("json"):
@@ -165,6 +171,10 @@ class SavedPlacesImporter:
         for feature in urls:
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
+            elif self.compare:
+                self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
+                if feature in self.bookmarks:
+                    nums["already_added"] += 1
             else:
                 if feature not in self.bookmarks:
                     ret = self.add_feature(feature)
@@ -185,11 +195,18 @@ class SavedPlacesImporter:
                     nums["unknown_error"] += 1
                 self.logger.info(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
             i += 1
-        self.logger.debug(u" > Summary:")
-        self.logger.debug(u" > Success: {:3d}".format(nums["success"]))
-        self.logger.debug(u" > Failure: {:3d}".format(nums["failure"]))
-        self.logger.debug(u" > Already added: {:3d}".format(nums["already_added"]))
-        self.logger.debug(u" > Unknown error: {:3d}".format(nums["unknown_error"]))
+        if not self.dry_run and not self.compare:
+            self.logger.debug(u" > Summary:")
+            self.logger.debug(u" > Success: {:3d}".format(nums["success"]))
+            self.logger.debug(u" > Failure: {:3d}".format(nums["failure"]))
+            self.logger.debug(u" > Already added: {:3d}".format(nums["already_added"]))
+            self.logger.debug(u" > Unknown error: {:3d}".format(nums["unknown_error"]))
+        elif self.compare:
+            if nums["already_added"] == num_features:
+                self.logger.debug(u" > All bookmarks / places already added / saved!")
+            else:
+                self.logger.debug(u" > {} bookmarks / places already added / saved".format(nums["already_added"]))
+                self.logger.debug(u" > {} bookmarks / places need to be added / saved".format(num_features - nums["already_added"]))
 
 
 if __name__ == "__main__":
@@ -202,6 +219,13 @@ if __name__ == "__main__":
         dest="dry_run",
         default=False,
         help="whether or not to perform the actual import",
+    )
+    parser.add_argument(
+        "--compare",
+        action="store_true",
+        dest="compare",
+        default=False,
+        help="only compare which bookmarks / places are already added / saved",
     )
     parser.add_argument(
         dest="import_file",
