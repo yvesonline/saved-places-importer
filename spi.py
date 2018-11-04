@@ -7,9 +7,12 @@ import logging
 
 from xml.etree.cElementTree import XML
 
-from marionette_driver.marionette import Marionette
-from marionette_driver import By, Wait, expected
-from marionette_driver.errors import NoSuchElementException, TimeoutException
+try:
+    from marionette_driver.marionette import Marionette
+    from marionette_driver import By, Wait, expected
+    from marionette_driver.errors import NoSuchElementException, TimeoutException
+except ImportError:
+    sys.exit("Please install 'marionette_driver', e.g. with 'pip install marionette_driver'.")
 
 from utils.timing import Timing
 
