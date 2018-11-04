@@ -83,33 +83,25 @@ class SavedPlacesImporter:
         displayed = Wait(self.client, timeout=10).until(expected.element_displayed(save_button))
 
         try:
-
-            Wait(self.client, timeout=6).until(self.save_button_contains_correct_text_saved)
-
-            return ADD_FEATURE_ALREADY_ADDED
-
-        except TimeoutException:
+            Wait(self.client, timeout=6).until(self.save_button_contains_correct_text_save)
+            try:
+                save_button.click()
+            except NoSuchElementException:
+                pass
 
             try:
-                Wait(self.client, timeout=6).until(self.save_button_contains_correct_text_save)
-                try:
-                    save_button.click()
-                except NoSuchElementException:
-                    pass
-
-                try:
-                    Wait(self.client, timeout=4).until(self.save_button_contains_correct_text_saved)
-                except TimeoutException:
-                    save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
-                    self.logger.error(" > [ERROR] Save button didn't switch to 'SAVED', it contains '{}'".format(save_button.text))
-                    return ADD_FEATURE_FAILURE
-
-                return ADD_FEATURE_SUCCESS
-
+                Wait(self.client, timeout=4).until(self.save_button_contains_correct_text_saved)
             except TimeoutException:
                 save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
-                self.logger.error(" > [ERROR] Save button contained unknown text '{}'".format(save_button.text))
-                return ADD_FEATURE_UNKNOWN_ERROR
+                self.logger.error(" > [ERROR] Save button didn't switch to 'SAVED', it contains '{}'".format(save_button.text))
+                return ADD_FEATURE_FAILURE
+
+            return ADD_FEATURE_SUCCESS
+
+        except TimeoutException:
+            save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
+            self.logger.error(" > [ERROR] Save button contained unknown text '{}'".format(save_button.text))
+            return ADD_FEATURE_UNKNOWN_ERROR
 
     def parse_geo_json(self):
         with open(self.import_file, "r") as f:

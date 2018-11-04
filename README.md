@@ -7,9 +7,8 @@
 - Add a venv description?
 - Write README (Synopsis, Requirements, Usage, `$ firefox -marionette`)
 - Add inline documentation
-- Add CSV reading
+- Add CSV reading (actually read CSV and transform to GeoJSON)
 - Add wait / throttling between requests
-- Refactor Marionette code to _not_ check if bookmark added (we do this elsewhere now)
 - Reverse engineer actual API calls?
 - Move some code to `utils`
 
