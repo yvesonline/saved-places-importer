@@ -36,7 +36,7 @@ def init_logging():
     logging.basicConfig(
         format="%(message)s",
         datefmt="",
-        level=logging.DEBUG
+        level=logging.INFO
     )
     logger = logging.getLogger()
     return logger
@@ -102,6 +102,7 @@ class SavedPlacesImporter:
             try:
                 Wait(self.client, timeout=4).until(self.save_button_contains_correct_text_saved)
             except TimeoutException:
+                self.logger.error(" > [ERROR] Feature: '{}'".format(url))
                 save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
                 self.logger.error(" > [ERROR] Save button didn't switch to 'SAVED', it contains '{}'".format(save_button.text))
                 return ADD_FEATURE_FAILURE
@@ -109,6 +110,7 @@ class SavedPlacesImporter:
             return ADD_FEATURE_SUCCESS
 
         except TimeoutException:
+            self.logger.error(" > [ERROR] Feature: '{}'".format(url))
             save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
             self.logger.error(" > [ERROR] Save button contained unknown text '{}'".format(save_button.text))
             return ADD_FEATURE_UNKNOWN_ERROR
@@ -175,16 +177,18 @@ class SavedPlacesImporter:
             "unknown_error": 0,
         }
         for feature in urls:
-            self.timing.start_interim()
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
             elif self.compare:
-                self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
                 if feature in self.bookmarks:
                     nums["already_added"] += 1
+                else:
+                    self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
             else:
                 if feature not in self.bookmarks:
+                    self.timing.start_interim()
                     ret = self.add_feature(feature)
+                    self.timing.stop_interim()
                 else:
                     ret = ADD_FEATURE_ALREADY_ADDED
 
@@ -200,21 +204,20 @@ class SavedPlacesImporter:
                 elif ret == ADD_FEATURE_UNKNOWN_ERROR:
                     ret_string = u"?"
                     nums["unknown_error"] += 1
-                self.logger.info(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
+                self.logger.debug(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
             i += 1
-            self.timing.stop_interim()
         if not self.dry_run and not self.compare:
-            self.logger.debug(u" > Summary:")
-            self.logger.debug(u" > Success: {:3d}".format(nums["success"]))
-            self.logger.debug(u" > Failure: {:3d}".format(nums["failure"]))
-            self.logger.debug(u" > Already added: {:3d}".format(nums["already_added"]))
-            self.logger.debug(u" > Unknown error: {:3d}".format(nums["unknown_error"]))
+            self.logger.info(u" > Summary:")
+            self.logger.info(u" > Success: {:3d}".format(nums["success"]))
+            self.logger.info(u" > Failure: {:3d}".format(nums["failure"]))
+            self.logger.info(u" > Already added: {:3d}".format(nums["already_added"]))
+            self.logger.info(u" > Unknown error: {:3d}".format(nums["unknown_error"]))
         elif self.compare:
             if nums["already_added"] == num_features:
-                self.logger.debug(u" > All bookmarks / places already added / saved!")
+                self.logger.info(u" > All bookmarks / places already added / saved!")
             else:
-                self.logger.debug(u" > {} bookmarks / places already added / saved".format(nums["already_added"]))
-                self.logger.debug(u" > {} bookmarks / places need to be added / saved".format(num_features - nums["already_added"]))
+                self.logger.info(u" > {} bookmarks / places already added / saved".format(nums["already_added"]))
+                self.logger.info(u" > {} bookmarks / places need to be added / saved".format(num_features - nums["already_added"]))
         self.timing.get_summary()
 
 
