@@ -31,7 +31,8 @@ MARIONETTE_PORT = 2828
 
 def init_logging():
     """
-    Initialize logging with a default level to INFO.
+    Initialize logging with a default level of INFO
+    and do some basic configuration tasks.
     """
     logging.basicConfig(
         format="%(message)s",
@@ -46,25 +47,31 @@ class SavedPlacesImporter:
 
     def __init__(self, args):
         """
-        Initialise the logger and the attribute.
+        This inits our main class, it expects
+        the arguments to be passed in.
         """
+        # Init the logger used throughout the whole script
         self.logger = init_logging()
-        # string to print in case a command finishes successfully
+        # String to print in case a command finishes successfully
         self.success_symbol = u"\u2713"
-        # string to print in case a command fails
+        # String to print in case a command fails
         self.failure_symbol = u"\u2717"
-        # the passed arguments
+        # The passed arguments
         self.import_file = args.import_file
         self.dry_run = args.dry_run
         self.compare = args.compare
-        # Marionette
+        # The Marionette instance
         self.client = None
-        # Existing bookmarks LUT
+        # A set of existing bookmarks to check later if a bookmark was already saved
         self.bookmarks = set()
         # Initialise timing
         self.timing = Timing(self.logger)
 
     def init_ff(self):
+        """
+        Initialises the connection to Firefox and starts a session.
+        @return: -
+        """
         if not check_socket(MARIONETTE_HOST, MARIONETTE_PORT):
             self.logger.error(u" > [ERROR] Please check if you started Firefox with the '-marionette' option. {}".format(self.failure_symbol))
             sys.exit(1)
@@ -72,16 +79,31 @@ class SavedPlacesImporter:
         self.client.start_session()
 
     def get_existing_bookmarks(self):
+        """
+        Get the existing bookmarks from the Google Bookmarks API.
+        We need to do this in Firefox to have the cookie set which authorises us with the API.
+        @return: -
+        """
         self.client.navigate("https://www.google.com/bookmarks/?output=xml&num=10000")
+        # Initialise XML object
         root = XML(self.client.page_source.encode("utf-8"))
+        # Add existing bookmarks to our set of bookmarks
         for bookmark in root[0]:
             self.bookmarks.add(bookmark[1].text)
 
     def save_button_contains_correct_text_save(self, *args):
+        """
+        Helper method for Marionette, here: check if fav button contains text "SAVE"
+        @return: Whether or not the fav button contains the text "SAVE"
+        """
         save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
         return save_button.text == "SAVE"
 
     def save_button_contains_correct_text_saved(self, *args):
+        """
+        Helper method for Marionette, here: check if fav button contains text "SAVED"
+        @return: Whether or not the fav button contains the text "SAVED"
+        """
         save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
         return save_button.text == "SAVED"
 
@@ -116,6 +138,10 @@ class SavedPlacesImporter:
             return ADD_FEATURE_UNKNOWN_ERROR
 
     def parse_geo_json(self):
+        """
+        Parses a GeoJSON file and extracts the Google Maps URLs.
+        @return: List of Google Maps URLs
+        """
         with open(self.import_file, "r") as f:
             data = json.load(f)
         if "features" in data:
@@ -129,6 +155,11 @@ class SavedPlacesImporter:
             self.logger.error(u" > [ERROR] No 'features' key in GeoJSON found {}".format(self.failure_symbol))
 
     def parse_csv(self):
+        """
+        Parses a CSV file and tries to look up Google Maps URLs.
+        Currently unimplemented!
+        @return: List of Google Maps URLs
+        """
         return []
 
     def process(self):
