@@ -108,22 +108,37 @@ class SavedPlacesImporter:
         return save_button.text == "SAVED"
 
     def add_feature(self, url):
+        """
+        Tries to add a feature (bookmark / place) to your Google Maps fav list.
+        @return:
+        - ADD_FEATURE_FAILURE if adding resulted in a known failure
+        - ADD_FEATURE_SUCCESS if everything went fine
+        - ADD_FEATURE_UNKNOWN_ERROR if we don't know what happened
+        """
+
+        # This navigates Firefox to the passed URL
         self.client.navigate(url)
 
+        # We wait for the fav button to be present...
         save_button = Wait(self.client, timeout=10).until(expected.element_present(By.CLASS_NAME, "section-entity-action-save-button"))
 
+        # ... and to be displayed
         displayed = Wait(self.client, timeout=10).until(expected.element_displayed(save_button))
 
         try:
+            # Now we look for the correct text, it should say "SAVE"
             Wait(self.client, timeout=6).until(self.save_button_contains_correct_text_save)
             try:
+                # Click it to add the feature (bookmark / place) to the Google Maps fav list
                 save_button.click()
             except NoSuchElementException:
                 pass
 
             try:
-                Wait(self.client, timeout=4).until(self.save_button_contains_correct_text_saved)
+                # Now the text should be "SAVED" and this indicates it was saved
+                Wait(self.client, timeout=6).until(self.save_button_contains_correct_text_saved)
             except TimeoutException:
+                # We clicked but the fav button text didn't change, i.e. the click went wrong or timed out
                 self.logger.error(" > [ERROR] Feature: '{}'".format(url))
                 save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
                 self.logger.error(" > [ERROR] Save button didn't switch to 'SAVED', it contains '{}'".format(save_button.text))
@@ -132,6 +147,11 @@ class SavedPlacesImporter:
             return ADD_FEATURE_SUCCESS
 
         except TimeoutException:
+            # This is the case if the fave button didn't contain the text "SAVE".
+            # This can happen if it contains "SAVED", but this shouldn't happen in the
+            # first place because we don't try to add features if we know that they're
+            # already added.
+            # So most likely something truely went wrong here.
             self.logger.error(" > [ERROR] Feature: '{}'".format(url))
             save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
             self.logger.error(" > [ERROR] Save button contained unknown text '{}'".format(save_button.text))
@@ -216,13 +236,15 @@ class SavedPlacesImporter:
                 else:
                     self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
             else:
+                # Check if feature already exists, i.e. if the
+                # bookmark / place was already added previously
                 if feature not in self.bookmarks:
                     self.timing.start_interim()
                     ret = self.add_feature(feature)
                     self.timing.stop_interim()
                 else:
                     ret = ADD_FEATURE_ALREADY_ADDED
-
+                # Do some bookkeeping with the return value
                 if ret == ADD_FEATURE_SUCCESS:
                     ret_string = self.success_symbol
                     nums["success"] += 1
