@@ -11,6 +11,8 @@ from marionette_driver.marionette import Marionette
 from marionette_driver import By, Wait, expected
 from marionette_driver.errors import NoSuchElementException, TimeoutException
 
+from utils.timing import Timing
+
 
 APP_NAME = "Saved Places Importer"
 
@@ -52,6 +54,8 @@ class SavedPlacesImporter:
         self.client = None
         # Existing bookmarks LUT
         self.bookmarks = set()
+        # Initialise timing
+        self.timing = Timing(self.logger)
 
     def init_ff(self):
         self.client = Marionette(host="localhost", port=2828)
@@ -126,9 +130,9 @@ class SavedPlacesImporter:
     def process(self):
         # Start processing
         self.logger.info(u" > Start of {}".format(APP_NAME))
-        self.logger.debug(u" > dry_run: {}".format(self.dry_run))
-        self.logger.debug(u" > compare: {}".format(self.compare))
-        self.logger.debug(u" > import_file: {}".format(self.import_file))
+        self.logger.debug(u" > [ARGS] dry_run: {}".format(self.dry_run))
+        self.logger.debug(u" > [ARGS] compare: {}".format(self.compare))
+        self.logger.debug(u" > [ARGS] import_file: {}".format(self.import_file))
 
         # Check arguments
         if not self.import_file.endswith("csv") and not self.import_file.endswith("json"):
@@ -169,6 +173,7 @@ class SavedPlacesImporter:
             "unknown_error": 0,
         }
         for feature in urls:
+            self.timing.start_interim()
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
             elif self.compare:
@@ -195,6 +200,7 @@ class SavedPlacesImporter:
                     nums["unknown_error"] += 1
                 self.logger.info(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
             i += 1
+            self.timing.stop_interim()
         if not self.dry_run and not self.compare:
             self.logger.debug(u" > Summary:")
             self.logger.debug(u" > Success: {:3d}".format(nums["success"]))
@@ -207,6 +213,7 @@ class SavedPlacesImporter:
             else:
                 self.logger.debug(u" > {} bookmarks / places already added / saved".format(nums["already_added"]))
                 self.logger.debug(u" > {} bookmarks / places need to be added / saved".format(num_features - nums["already_added"]))
+        self.timing.get_summary()
 
 
 if __name__ == "__main__":
@@ -239,24 +246,3 @@ if __name__ == "__main__":
     # Hand over to helper class
     spi = SavedPlacesImporter(args)
     spi.process()
-
-# TODO
-#
-# Check if Marionette is installed?
-# Check if `localhost` Marionette connection can be established?
-# Add a `requirements.txt`
-# Add a venv description?
-# Write README (Synopsis, Requirements, Usage, `$ firefox -marionette`)
-# Add inline documentation
-# Add timing
-# Add CSV reading
-# Add wait / throttling between requests
-# Refactor Marionette code to _not_ check if bookmark added (we do this elsewhere now)
-# Reverse engineer actual API calls?
-#
-# URLs
-#
-# https://en.wikipedia.org/wiki/GeoJSON
-# https://web.archive.org/web/20111206070337/http://www.mmartins.com/mmartins/googlebookmarksapi/
-# https://marionette-client.readthedocs.io/en/latest/index.html
-# https://www.google.com/bookmarks/
