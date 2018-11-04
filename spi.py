@@ -15,6 +15,7 @@ except ImportError:
     sys.exit("Please install 'marionette_driver', e.g. with 'pip install marionette_driver'.")
 
 from utils.timing import Timing
+from utils.net import check_socket
 
 
 APP_NAME = "Saved Places Importer"
@@ -23,6 +24,9 @@ ADD_FEATURE_SUCCESS = 0
 ADD_FEATURE_FAILURE = 1
 ADD_FEATURE_ALREADY_ADDED = 2
 ADD_FEATURE_UNKNOWN_ERROR = 3
+
+MARIONETTE_HOST = "localhost"
+MARIONETTE_PORT = 2828
 
 
 def init_logging():
@@ -61,7 +65,10 @@ class SavedPlacesImporter:
         self.timing = Timing(self.logger)
 
     def init_ff(self):
-        self.client = Marionette(host="localhost", port=2828)
+        if not check_socket(MARIONETTE_HOST, MARIONETTE_PORT):
+            self.logger.error(u" > [ERROR] Please check if you started Firefox with the '-marionette' option. {}".format(self.failure_symbol))
+            sys.exit(1)
+        self.client = Marionette(host=MARIONETTE_HOST, port=MARIONETTE_PORT)
         self.client.start_session()
 
     def get_existing_bookmarks(self):

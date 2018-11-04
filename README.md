@@ -2,7 +2,6 @@
 
 # TODO
 
-- Check if `localhost` Marionette connection can be established?
 - Add a venv description?
 - Write README (Synopsis, Requirements, Usage, `$ firefox -marionette`)
 - Add inline documentation
