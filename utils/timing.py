@@ -1,13 +1,13 @@
 #!/usr/bin/env python2
 
-import time;
+import time
 
 from functools import reduce
 
 
 class Timing:
     """
-    A class to help us time operations in the main scrop.
+    A class to help us time operations in the main program.
     It's able to track overall and interim times.
     """
 
@@ -41,7 +41,7 @@ class Timing:
     def get_summary(self):
         """
         Stop the overall timer and print out a summary.
-        @return: A dictionary containing the overall duration, an 
+        @return: A dictionary containing the overall duration, an
                  average of the interims and the number of interims.
         """
         self.stop = time.time()

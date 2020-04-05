@@ -3,6 +3,7 @@
 import socket
 from contextlib import closing
 
+
 def check_socket(host, port):
     """
     Returns True if successful (i.e. host and port reachable), otherwise False.
