@@ -41,7 +41,7 @@ def init_logging():
     logging.basicConfig(
         format="%(message)s",
         datefmt="",
-        level=logging.INFO
+        level=logging.DEBUG
     )
     logger = logging.getLogger()
     return logger
@@ -227,13 +227,21 @@ class SavedPlacesImporter:
         if self.import_file.endswith("json"):
             self.mode = MODE_GEO_JSON
             self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
-            features = self.parse_geo_json()
+            try:
+                features = self.parse_geo_json()
+            except IOError:
+                self.logger.error(u" > [ERROR] Unable to open GeoJSON file '{}' {}".format(self.import_file, self.failure_symbol))
+                exit(1)
 
         # Parse GPX
         if self.import_file.endswith("gpx"):
             self.mode = MODE_GPX
             self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
-            features = self.parse_gpx()
+            try:
+                features = self.parse_gpx()
+            except IOError:
+                self.logger.error(u" > [ERROR] Unable to open GPX file '{}' {}".format(self.import_file, self.failure_symbol))
+                exit(1)
 
         # Check number of features returned
         num_features = len(features)

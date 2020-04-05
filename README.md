@@ -42,8 +42,8 @@ $ python2.7 spi.py samples/sample-geo.json
 ## To-do list
 
 - Add wait / throttling between requests.
-- Move helper code to `utils`.
 - Reverse engineer actual API calls made by Google Maps?
+- Move helper code to `utils`.
 
 ## Issues
 
