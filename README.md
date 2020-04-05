@@ -41,6 +41,7 @@ $ python2.7 spi.py samples/sample-geo.json
 
 ## To-do list
 
+- Extend interactive mode.
 - Add wait / throttling between requests.
 - Reverse engineer actual API calls made by Google Maps?
 
