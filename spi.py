@@ -1,13 +1,11 @@
 #!/usr/bin/env python2
 
 import argparse
-import json
 import logging
-
-import xml.etree.ElementTree as ET
 
 from utils.timing import Timing
 from utils.marionette import MarionetteHelper
+from utils.parse import parse_geo_json, parse_gpx
 
 
 APP_NAME = "Saved Places Importer"
@@ -61,32 +59,6 @@ class SavedPlacesImporter:
         # Initialise timing
         self.timing = Timing(self.logger)
 
-    def parse_geo_json(self):
-        """
-        Parses a GeoJSON file and extracts the Google Maps URLs.
-        @return: List of Google Maps URLs
-        """
-        with open(self.import_file, "r") as f:
-            data = json.load(f)
-        if "features" in data:
-            urls = []
-            for feature in data["features"]:
-                assert "properties" in feature
-                assert "Google Maps URL" in feature["properties"]
-                urls.append(feature["properties"]["Google Maps URL"])
-            return urls
-        else:
-            self.logger.error(u" > [ERROR] No 'features' key in GeoJSON found {}".format(self.failure_symbol))
-
-    def parse_gpx(self):
-        """
-        Parses a GPX file.
-        @return: List of Lat/Lon.
-        """
-        tree = ET.parse(self.import_file)
-        name_tag = "{http://www.topografix.com/GPX/1/1}name"
-        return [(wpt.attrib["lat"], wpt.attrib["lon"], wpt.find(name_tag).text) for wpt in tree.getroot()]
-
     def process(self):
         # Start processing
         self.logger.info(u" > Start of {}".format(APP_NAME))
@@ -107,9 +79,12 @@ class SavedPlacesImporter:
             self.mode = MODE_GEO_JSON
             self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
             try:
-                features = self.parse_geo_json()
+                features = parse_geo_json(self.import_file)
             except IOError:
                 self.logger.error(u" > [ERROR] Unable to open GeoJSON file '{}' {}".format(self.import_file, self.failure_symbol))
+                exit(1)
+            except ValueError as ve:
+                self.logger.error(u" > [ERROR] {} {}".format(ve.message, self.failure_symbol))
                 exit(1)
 
         # Parse GPX
@@ -117,7 +92,7 @@ class SavedPlacesImporter:
             self.mode = MODE_GPX
             self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
             try:
-                features = self.parse_gpx()
+                features = parse_gpx(self.import_file)
             except IOError:
                 self.logger.error(u" > [ERROR] Unable to open GPX file '{}' {}".format(self.import_file, self.failure_symbol))
                 exit(1)
