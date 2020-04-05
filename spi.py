@@ -5,6 +5,7 @@ import argparse
 import json
 import logging
 
+import xml.etree.ElementTree as ET
 from xml.etree.cElementTree import XML
 
 try:
@@ -27,6 +28,9 @@ ADD_FEATURE_UNKNOWN_ERROR = 3
 
 MARIONETTE_HOST = "localhost"
 MARIONETTE_PORT = 2828
+
+MODE_GPX = "GPX"
+MODE_GEO_JSON = "GEO_JSON"
 
 
 def init_logging():
@@ -60,6 +64,8 @@ class SavedPlacesImporter:
         self.import_file = args.import_file
         self.dry_run = args.dry_run
         self.compare = args.compare
+        # The mode to operate in
+        self.mode = None
         # The Marionette instance
         self.client = None
         # A set of existing bookmarks to check later if a bookmark was already saved
@@ -73,7 +79,10 @@ class SavedPlacesImporter:
         @return: -
         """
         if not check_socket(MARIONETTE_HOST, MARIONETTE_PORT):
-            self.logger.error(u" > [ERROR] Please check if you started Firefox with the '-marionette' option. {}".format(self.failure_symbol))
+            self.logger.error(
+                u" > [ERROR] Please check if you started Firefox with the '-marionette' "
+                "option or set 'marionette.enabled' to 'true' in 'about:config'. {}".format(self.failure_symbol)
+            )
             sys.exit(1)
         self.client = Marionette(host=MARIONETTE_HOST, port=MARIONETTE_PORT)
         self.client.start_session()
@@ -106,6 +115,22 @@ class SavedPlacesImporter:
         """
         save_button = self.client.find_element(By.CLASS_NAME, "section-entity-action-save-button")
         return save_button.text == "SAVED"
+
+    def interactive_add_feature(self, coordinates):
+        """
+        Navigates to the Google Maps URL for the provided coordinates and waits for input.
+        @return: -
+        """
+        url = "https://www.google.com/maps/search/?api=1&query={},{}"
+
+        # This navigates Firefox to the passed URL
+        self.client.navigate(url.format(coordinates[0], coordinates[1]))
+
+        # Wait for input
+        if sys.version_info[0] < 3:
+            raw_input("Press Enter to continue...")
+        else:
+            input("Press Enter to continue...")
 
     def add_feature(self, url):
         """
@@ -174,13 +199,14 @@ class SavedPlacesImporter:
         else:
             self.logger.error(u" > [ERROR] No 'features' key in GeoJSON found {}".format(self.failure_symbol))
 
-    def parse_csv(self):
+    def parse_gpx(self):
         """
-        Parses a CSV file and tries to look up Google Maps URLs.
-        Currently unimplemented!
-        @return: List of Google Maps URLs
+        Parses a GPX file.
+        @return: List of Lat/Lon.
         """
-        return []
+        tree = ET.parse(self.import_file)
+        name_tag = "{http://www.topografix.com/GPX/1/1}name"
+        return [(wpt.attrib["lat"], wpt.attrib["lon"], wpt.find(name_tag).text) for wpt in tree.getroot()]
 
     def process(self):
         # Start processing
@@ -190,7 +216,7 @@ class SavedPlacesImporter:
         self.logger.debug(u" > [ARGS] import_file: {}".format(self.import_file))
 
         # Check arguments
-        if not self.import_file.endswith("csv") and not self.import_file.endswith("json"):
+        if not self.import_file.endswith("gpx") and not self.import_file.endswith("json"):
             self.logger.error(u" > [ERROR] Unknown file format supplied {}".format(self.failure_symbol))
             return
         if self.dry_run and self.compare:
@@ -199,14 +225,18 @@ class SavedPlacesImporter:
 
         # Parse GeoJSON
         if self.import_file.endswith("json"):
-            urls = self.parse_geo_json()
+            self.mode = MODE_GEO_JSON
+            self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
+            features = self.parse_geo_json()
 
-        # Parse CSV
-        if self.import_file.endswith("csv"):
-            urls = self.parse_csv()
+        # Parse GPX
+        if self.import_file.endswith("gpx"):
+            self.mode = MODE_GPX
+            self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
+            features = self.parse_gpx()
 
         # Check number of features returned
-        num_features = len(urls)
+        num_features = len(features)
         if num_features == 0:
             self.logger.error(u" > [ERROR] No features to import found {}".format(self.failure_symbol))
         else:
@@ -214,8 +244,6 @@ class SavedPlacesImporter:
 
         if not self.dry_run:
             self.init_ff()
-
-        if not self.dry_run:
             self.get_existing_bookmarks()
             self.logger.info(u" > Found {} existing bookmarks {}".format(len(self.bookmarks), self.success_symbol))
 
@@ -227,37 +255,44 @@ class SavedPlacesImporter:
             "already_added": 0,
             "unknown_error": 0,
         }
-        for feature in urls:
+        for feature in features:
             if self.dry_run:
                 self.logger.info(u" > [DRY RUN] {:3d}/{} {}".format(i, num_features, feature))
             elif self.compare:
-                if feature in self.bookmarks:
-                    nums["already_added"] += 1
-                else:
-                    self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
+                if self.mode == MODE_GEO_JSON:
+                    if feature in self.bookmarks:
+                        nums["already_added"] += 1
+                    else:
+                        self.logger.info(u" > [COMPARE] {:3d}/{} {}".format(i, num_features, feature))
+                elif self.mode == MODE_GPX:
+                    self.logger.info(u" > [COMPARE] Compare not supported for GPX mode")
             else:
-                # Check if feature already exists, i.e. if the
-                # bookmark / place was already added previously
-                if feature not in self.bookmarks:
-                    self.timing.start_interim()
-                    ret = self.add_feature(feature)
-                    self.timing.stop_interim()
-                else:
-                    ret = ADD_FEATURE_ALREADY_ADDED
-                # Do some bookkeeping with the return value
-                if ret == ADD_FEATURE_SUCCESS:
-                    ret_string = self.success_symbol
-                    nums["success"] += 1
-                elif ret == ADD_FEATURE_FAILURE:
-                    ret_string = self.failure_symbol
-                    nums["failure"] += 1
-                elif ret == ADD_FEATURE_ALREADY_ADDED:
-                    ret_string = u"-"
-                    nums["already_added"] += 1
-                elif ret == ADD_FEATURE_UNKNOWN_ERROR:
-                    ret_string = u"?"
-                    nums["unknown_error"] += 1
-                self.logger.debug(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
+                if self.mode == MODE_GEO_JSON:
+                    # Check if feature already exists, i.e. if the
+                    # bookmark / place was already added previously
+                    if feature not in self.bookmarks:
+                        self.timing.start_interim()
+                        ret = self.add_feature(feature)
+                        self.timing.stop_interim()
+                    else:
+                        ret = ADD_FEATURE_ALREADY_ADDED
+                    # Do some bookkeeping with the return value
+                    if ret == ADD_FEATURE_SUCCESS:
+                        ret_string = self.success_symbol
+                        nums["success"] += 1
+                    elif ret == ADD_FEATURE_FAILURE:
+                        ret_string = self.failure_symbol
+                        nums["failure"] += 1
+                    elif ret == ADD_FEATURE_ALREADY_ADDED:
+                        ret_string = u"-"
+                        nums["already_added"] += 1
+                    elif ret == ADD_FEATURE_UNKNOWN_ERROR:
+                        ret_string = u"?"
+                        nums["unknown_error"] += 1
+                    self.logger.debug(u" > {:3d}/{} {} {}".format(i, num_features, ret_string, feature))
+                elif self.mode == MODE_GPX:
+                    self.logger.debug(u" > {:3d}/{} {}".format(i, num_features, feature))
+                    self.interactive_add_feature(feature)
             i += 1
         if not self.dry_run and not self.compare:
             self.logger.info(u" > Summary:")
@@ -295,7 +330,7 @@ if __name__ == "__main__":
     parser.add_argument(
         dest="import_file",
         default=None,
-        help="the file to import (currently GeoJSON & CSV are supported)",
+        help="the file to import (currently GeoJSON & GPX are supported)",
     )
 
     # Parse the arguments

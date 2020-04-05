@@ -6,7 +6,7 @@ Google gives you the opportunity to download your data via [Google Takeout](http
 
 ## Requirements
 
-You will need to have Firefox installed and logged in to your Google account. Then you need the `marionette_driver` package which you can install via pip with `pip install marionette_driver`. Afterwards start your Firefox with `firefox -marionette` so that it can be controlled. If you don't want to temper with your system create a virtual environment using:
+You will need to have Firefox installed and logged in to your Google account. Then you need the `marionette_driver` package which you can install via pip with `pip install marionette_driver`. Afterwards start your Firefox with `firefox -marionette` so that it can be controlled. Alternatively you can set `marionette.enabled` to `true` in `about:config`. If you don't want to temper with your system create a virtual environment using:
 ```lang=bash
 $ virtualenv --version  # Check virtual environment is installed
 $ virtualenv venv --python=python2.7  # Create a virtual environment
@@ -41,10 +41,9 @@ $ python2.7 spi.py samples/sample-geo.json
 
 ## To-do list
 
-- Add CSV reading (actually read CSV and transform to Google Maps URLs)
 - Add wait / throttling between requests
 - Move helper code to `utils`
-- Upgrade to Python 3.7
+- Upgrade to Python 3.x
 - Reverse engineer actual API calls made by Google Maps?
 
 ## Useful links
