@@ -12,16 +12,9 @@ import googlemaps
 from utils.timing import Timing
 from utils.marionette import MarionetteHelper
 from utils.parse import parse_geo_json, parse_gpx
-from utils.constants import LIST_STARRED_PLACES, LIST_WANT_TO_GO
-
-
-APP_NAME = "Saved Places Importer"
-
-
-MODE_GPX = "GPX"
-MODE_GEO_JSON = "GEO_JSON"
-MODE_BATCH = "BATCH"
-MODE_INTERACTIVE = "INTERACTIVE"
+from utils.constants import APP_NAME, \
+    LIST_STARRED_PLACES, LIST_WANT_TO_GO, \
+    MODE_GPX, MODE_GEO_JSON, MODE_BATCH, MODE_INTERACTIVE
 
 
 def init_logging():
