@@ -87,6 +87,31 @@ class MarionetteHelper:
         else:
             input("Press Enter to continue...")
 
+    def add_feature_2(self, url):
+        """
+        Tries to add a feature (bookmark / place) to your Google Maps fav list.
+        @return: -
+        """
+        self.client.navigate(url)
+        try:
+            save_button = Wait(self.client, timeout=10).until(
+                expected.element_present(By.CSS_SELECTOR, "[data-value='Save']")
+            )
+            Wait(self.client, timeout=10).until(
+                expected.element_displayed(save_button)
+            )
+        except TimeoutException:
+            self.logger.info(" > Unable to find save button, assuming feature was already saved")
+            return ADD_FEATURE_ALREADY_ADDED
+        save_button.click()
+        sub_save_item = Wait(self.client, timeout=10).until(
+            expected.element_present(By.CSS_SELECTOR, "#action-menu [data-index='2']")
+        )
+        Wait(self.client, timeout=10).until(
+            expected.element_displayed(sub_save_item)
+        )
+        sub_save_item.click()
+
     def add_feature(self, url):
         """
         Tries to add a feature (bookmark / place) to your Google Maps fav list.

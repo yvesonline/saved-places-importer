@@ -2,6 +2,12 @@
 
 import argparse
 import logging
+import json
+import os
+import urllib
+
+import inquirer
+import googlemaps
 
 from utils.timing import Timing
 from utils.marionette import MarionetteHelper
@@ -17,6 +23,8 @@ ADD_FEATURE_UNKNOWN_ERROR = 3
 
 MODE_GPX = "GPX"
 MODE_GEO_JSON = "GEO_JSON"
+MODE_BATCH = "BATCH"
+MODE_INTERACTIVE = "INTERACTIVE"
 
 
 def init_logging():
@@ -47,17 +55,77 @@ class SavedPlacesImporter:
         # String to print in case a command fails
         self.failure_symbol = u"\u2717"
         # The passed arguments
-        self.import_file = args.import_file
-        self.dry_run = args.dry_run
-        self.compare = args.compare
+        self.import_file = args.import_file if "import_file" in args else ""
+        self.dry_run = args.dry_run if "dry_run" in args else False
+        self.compare = args.compare if "compare" in args else False
         # The mode to operate in
-        self.mode = None
+        self.mode = MODE_BATCH if "import_file" in args else MODE_INTERACTIVE
         # The Marionette instance, wrapped by our own helper class
         self.marionette = MarionetteHelper(self.logger, self.success_symbol, self.failure_symbol)
         # A set of existing bookmarks to check later if a bookmark was already saved
         self.bookmarks = set()
+        # Initialise Google Maps API
+        try:
+            path = os.path.dirname(os.path.realpath(__file__))
+            key_file = "gm-api-key.json"
+            with open("{}/{}".format(path, key_file), "r") as f:
+                data = json.load(f)
+                self.gm = googlemaps.Client(key=data["key"])
+        except IOError:
+            self.logger.error(
+                u" > [ERROR] Unable to open '{}', Google Maps API disabled {}".format(
+                        key_file, self.failure_symbol
+                    )
+            )
+            self.gm = None
         # Initialise timing
         self.timing = Timing(self.logger)
+
+    def interactive_loop(self):
+        # Choices "Main Menu"
+        # Add city
+        # Exit
+        choice = ""
+        while choice != "Exit":
+            choice = inquirer.list_input(
+                "Please choose an action",
+                choices=["Add city", "Exit"]
+            )
+            if choice == "Add city":
+                self.interactive_loop_add_city()
+
+    def interactive_loop_add_city(self):
+        # Choices "Add city"
+        # ...
+        # Back
+        choice = ""
+        while choice != "Back":
+            city = inquirer.text(message="Enter the name of the city to add")
+            # Query for city
+            gm_results = self.gm.places_autocomplete(
+                input_text=city,
+                types="(cities)"
+            )
+            # Let user choose which city to add
+            choice = inquirer.list_input(
+                "Please choose which city to add",
+                choices=[(result["description"], result["place_id"]) for result in gm_results]
+            )
+            # Build Google Maps URL
+            url = "https://www.google.com/maps/search/?{}"
+            params = {
+                "api": "1",
+                "query": city,
+                "query_place_id": choice,
+            }
+            self.logger.debug(u" > Google Maps URL: {}".format(url.format(urllib.urlencode(params))))
+            # Navigate with Firefox and try to add
+            self.marionette.add_feature_2(url.format(urllib.urlencode(params)))
+            # Wait for user input
+            choice = inquirer.list_input(
+                "Please choose an action",
+                choices=["Add another city", "Back"]
+            )
 
     def process(self):
         # Start processing
@@ -65,6 +133,13 @@ class SavedPlacesImporter:
         self.logger.debug(u" > [ARGS] dry_run: {}".format(self.dry_run))
         self.logger.debug(u" > [ARGS] compare: {}".format(self.compare))
         self.logger.debug(u" > [ARGS] import_file: {}".format(self.import_file))
+
+        # Check for interactive mode
+        if self.mode == MODE_INTERACTIVE:
+            self.logger.debug(u" > [ARGS] mode: {}".format(self.mode))
+            self.marionette.init_ff()
+            self.interactive_loop()
+            exit(0)
 
         # Check arguments
         if not self.import_file.endswith("gpx") and not self.import_file.endswith("json"):
@@ -175,24 +250,31 @@ if __name__ == "__main__":
     # Declare the arguments
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description=APP_NAME)
-    parser.add_argument(
+    subparsers = parser.add_subparsers()
+    batch_mode_parser = subparsers.add_parser(
+        "batch", help="Batch mode, via import files"
+    )
+    batch_mode_parser.add_argument(
         "--dry-run",
         action="store_true",
         dest="dry_run",
         default=False,
         help="whether or not to perform the actual import",
     )
-    parser.add_argument(
+    batch_mode_parser.add_argument(
         "--compare",
         action="store_true",
         dest="compare",
         default=False,
         help="only compare which bookmarks / places are already added / saved",
     )
-    parser.add_argument(
+    batch_mode_parser.add_argument(
         dest="import_file",
         default=None,
         help="the file to import (currently GeoJSON & GPX are supported)",
+    )
+    interactive_mode_parser = subparsers.add_parser(
+        "interactive", help="Interactive mode, via menu"
     )
 
     # Parse the arguments
