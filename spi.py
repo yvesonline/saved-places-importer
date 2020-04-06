@@ -12,14 +12,11 @@ import googlemaps
 from utils.timing import Timing
 from utils.marionette import MarionetteHelper
 from utils.parse import parse_geo_json, parse_gpx
+from utils.constants import LIST_STARRED_PLACES, LIST_WANT_TO_GO
 
 
 APP_NAME = "Saved Places Importer"
 
-ADD_FEATURE_SUCCESS = 0
-ADD_FEATURE_FAILURE = 1
-ADD_FEATURE_ALREADY_ADDED = 2
-ADD_FEATURE_UNKNOWN_ERROR = 3
 
 MODE_GPX = "GPX"
 MODE_GEO_JSON = "GEO_JSON"
@@ -58,6 +55,7 @@ class SavedPlacesImporter:
         self.import_file = args.import_file if "import_file" in args else ""
         self.dry_run = args.dry_run if "dry_run" in args else False
         self.compare = args.compare if "compare" in args else False
+        self.list_add = args.list_add if "list_add" in args else None
         # The mode to operate in
         self.mode = MODE_BATCH if "import_file" in args else MODE_INTERACTIVE
         # The Marionette instance, wrapped by our own helper class
@@ -120,7 +118,7 @@ class SavedPlacesImporter:
             }
             self.logger.debug(u" > Google Maps URL: {}".format(url.format(urllib.urlencode(params))))
             # Navigate with Firefox and try to add
-            self.marionette.add_feature_2(url.format(urllib.urlencode(params)))
+            self.marionette.add_feature_2(url.format(urllib.urlencode(params)), self.list_add)
             # Wait for user input
             choice = inquirer.list_input(
                 "Please choose an action",
@@ -133,6 +131,7 @@ class SavedPlacesImporter:
         self.logger.debug(u" > [ARGS] dry_run: {}".format(self.dry_run))
         self.logger.debug(u" > [ARGS] compare: {}".format(self.compare))
         self.logger.debug(u" > [ARGS] import_file: {}".format(self.import_file))
+        self.logger.debug(u" > [ARGS] list_add: {}".format(self.list_add))
 
         # Check for interactive mode
         if self.mode == MODE_INTERACTIVE:
@@ -275,6 +274,13 @@ if __name__ == "__main__":
     )
     interactive_mode_parser = subparsers.add_parser(
         "interactive", help="Interactive mode, via menu"
+    )
+    interactive_mode_parser.add_argument(
+        "--list",
+        choices=[LIST_STARRED_PLACES, LIST_WANT_TO_GO],
+        dest="list_add",
+        default=LIST_STARRED_PLACES,
+        help="which list to add bookmarks / places to"
     )
 
     # Parse the arguments

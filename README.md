@@ -42,7 +42,8 @@ $ python2.7 spi.py samples/sample-geo.json
 ## To-do list
 
 - Update README.md with new features.
-- Extend interactive mode. Maybe just add cities? Or sights?
+- Extend interactive mode. Add menu items for other entities.
+- Redesign entire application, especially sub-command structure.
 - Add wait / throttling between requests.
 - Reverse engineer actual API calls made by Google Maps?
 

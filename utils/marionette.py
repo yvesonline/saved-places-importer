@@ -12,6 +12,7 @@ except ImportError:
 from xml.etree.cElementTree import XML
 
 from utils.net import check_socket
+import utils.constants
 
 
 MARIONETTE_HOST = "localhost"
@@ -87,27 +88,34 @@ class MarionetteHelper:
         else:
             input("Press Enter to continue...")
 
-    def add_feature_2(self, url):
+    def add_feature_2(self, url, list_add):
         """
         Tries to add a feature (bookmark / place) to your Google Maps fav list.
         @return: -
         """
         self.client.navigate(url)
         try:
-            save_button = Wait(self.client, timeout=10).until(
+            save_button = Wait(self.client, timeout=5).until(
                 expected.element_present(By.CSS_SELECTOR, "[data-value='Save']")
             )
-            Wait(self.client, timeout=10).until(
+            Wait(self.client, timeout=5).until(
                 expected.element_displayed(save_button)
             )
         except TimeoutException:
             self.logger.info(" > Unable to find save button, assuming feature was already saved")
-            return ADD_FEATURE_ALREADY_ADDED
+            return utils.constants.ADD_FEATURE_ALREADY_ADDED
         save_button.click()
-        sub_save_item = Wait(self.client, timeout=10).until(
-            expected.element_present(By.CSS_SELECTOR, "#action-menu [data-index='2']")
+        if list_add == utils.constants.LIST_STARRED_PLACES:
+            data_index = 2
+        elif list_add == utils.constants.LIST_WANT_TO_GO:
+            data_index = 1
+        else:
+            data_index = -1
+        css_selector = "#action-menu [data-index='{}']".format(data_index)
+        sub_save_item = Wait(self.client, timeout=5).until(
+            expected.element_present(By.CSS_SELECTOR, css_selector)
         )
-        Wait(self.client, timeout=10).until(
+        Wait(self.client, timeout=5).until(
             expected.element_displayed(sub_save_item)
         )
         sub_save_item.click()
