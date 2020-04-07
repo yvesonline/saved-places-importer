@@ -42,7 +42,9 @@ $ python2.7 spi.py samples/sample-geo.json
 ## To-do list
 
 - Update README.md with new features.
-- Extend interactive mode. Add menu items for other entities.
+- Add menu items for other entities.
+- Combine common code from `interactive_loop_add_*`.
+- Detect if entity already saved.
 - Redesign entire application, especially sub-command structure.
 - Add wait / throttling between requests.
 - Reverse engineer actual API calls made by Google Maps?
@@ -56,4 +58,4 @@ $ python2.7 spi.py samples/sample-geo.json
 - [GeoJSON Wikipedia article](https://en.wikipedia.org/wiki/GeoJSON)
 - [GPS Exchange Format Wikipedia article](https://en.wikipedia.org/wiki/GPS_Exchange_Format)
 - [Archived Google Bookmarks API description](https://web.archive.org/web/20111206070337/http://www.mmartins.com/mmartins/googlebookmarksapi/)
-- [Marionette reference](https://marionette-client.readthedocs.io/en/latest/index.html)
+- [marionette_driver package reference](https://firefox-source-docs.mozilla.org/python/marionette_driver.html)

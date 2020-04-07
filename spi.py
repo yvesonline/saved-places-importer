@@ -1,4 +1,5 @@
 #!/usr/bin/env python2
+# encoding: utf-8
 
 import argparse
 import logging
@@ -75,20 +76,101 @@ class SavedPlacesImporter:
     def interactive_loop(self):
         # Choices "Main Menu"
         # Add city
+        # Add airport
         # Exit
+        CHOICE_CITY = "CITY"
+        CHOICE_AIRPORT = "AIRPORT"
+        CHOICE_POINT_OF_INTEREST = "POINT_OF_INTEREST"
+        CHOICE_EXIT = "EXIT"
+        CHOICES = [
+            ("Add city", CHOICE_CITY),
+            ("Add airport", CHOICE_AIRPORT),
+            ("Add point of interest", CHOICE_POINT_OF_INTEREST),
+            ("Exit", CHOICE_EXIT),
+        ]
         choice = ""
-        while choice != "Exit":
+        while choice != CHOICE_EXIT:
             choice = inquirer.list_input(
                 "Please choose an action",
-                choices=["Add city", "Exit"]
+                choices=CHOICES
             )
-            if choice == "Add city":
+            if choice == CHOICE_CITY:
                 self.interactive_loop_add_city()
+            elif choice == CHOICE_AIRPORT:
+                self.interactive_loop_add_airport()
+            elif choice == CHOICE_POINT_OF_INTEREST:
+                self.interactive_loop_add_point_of_interest()
+
+    def interactive_loop_add_point_of_interest(self):
+        CHOICE_CANCEL = "CANCEL"
+        choice = ""
+        while choice != "Back":
+            point_of_interest = inquirer.text(message="Enter the name of the point of interest to add")
+            # Query for the point of interest
+            gm_results = self.gm.places(
+                query=point_of_interest,
+                type="point_of_interest"
+            )
+            # Let user choose which point of interest to add
+            choice = inquirer.list_input(
+                "Please choose which point of interest to add",
+                choices=[(result["name"], result["place_id"]) for result in gm_results["results"]] +
+                [("Cancel", CHOICE_CANCEL)]
+            )
+            if choice == CHOICE_CANCEL:
+                break
+            # Build Google Maps URL
+            url = "https://www.google.com/maps/search/?{}"
+            params = {
+                "api": "1",
+                "query": point_of_interest,
+                "query_place_id": choice,
+            }
+            self.logger.debug(u" > Google Maps URL: {}".format(url.format(urllib.urlencode(params))))
+            # Navigate with Firefox and try to add
+            self.marionette.add_feature_2(url.format(urllib.urlencode(params)), self.list_add)
+            # Wait for user input
+            choice = inquirer.list_input(
+                "Please choose an action",
+                choices=["Add another point of interest", "Back"]
+            )
+
+    def interactive_loop_add_airport(self):
+        CHOICE_CANCEL = "CANCEL"
+        choice = ""
+        while choice != "Back":
+            airport = inquirer.text(message="Enter the name of the airport to add")
+            # Query for airport
+            gm_results = self.gm.places(
+                query=airport,
+                type="airport"
+            )
+            # Let user choose which airport to add
+            choice = inquirer.list_input(
+                "Please choose which airport to add",
+                choices=[(result["name"], result["place_id"]) for result in gm_results["results"]] +
+                [("Cancel", CHOICE_CANCEL)]
+            )
+            if choice == CHOICE_CANCEL:
+                break
+            # Build Google Maps URL
+            url = "https://www.google.com/maps/search/?{}"
+            params = {
+                "api": "1",
+                "query": airport,
+                "query_place_id": choice,
+            }
+            self.logger.debug(u" > Google Maps URL: {}".format(url.format(urllib.urlencode(params))))
+            # Navigate with Firefox and try to add
+            self.marionette.add_feature_2(url.format(urllib.urlencode(params)), self.list_add)
+            # Wait for user input
+            choice = inquirer.list_input(
+                "Please choose an action",
+                choices=["Add another airport", "Back"]
+            )
 
     def interactive_loop_add_city(self):
-        # Choices "Add city"
-        # ...
-        # Back
+        CHOICE_CANCEL = "CANCEL"
         choice = ""
         while choice != "Back":
             city = inquirer.text(message="Enter the name of the city to add")
@@ -100,8 +182,11 @@ class SavedPlacesImporter:
             # Let user choose which city to add
             choice = inquirer.list_input(
                 "Please choose which city to add",
-                choices=[(result["description"], result["place_id"]) for result in gm_results]
+                choices=[(result["description"], result["place_id"]) for result in gm_results] +
+                [("Cancel", CHOICE_CANCEL)]
             )
+            if choice == CHOICE_CANCEL:
+                break
             # Build Google Maps URL
             url = "https://www.google.com/maps/search/?{}"
             params = {
