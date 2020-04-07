@@ -95,6 +95,14 @@ class MarionetteHelper:
         """
         self.client.navigate(url)
         try:
+            saved_button = Wait(self.client, timeout=10).until(
+                expected.element_present(By.CSS_SELECTOR, "[data-value='Saved']")
+            )
+            self.logger.info(" > Feature was already saved")
+            return utils.constants.ADD_FEATURE_ALREADY_ADDED
+        except TimeoutException:
+            pass
+        try:
             save_button = Wait(self.client, timeout=5).until(
                 expected.element_present(By.CSS_SELECTOR, "[data-value='Save']")
             )
@@ -102,8 +110,8 @@ class MarionetteHelper:
                 expected.element_displayed(save_button)
             )
         except TimeoutException:
-            self.logger.info(" > Unable to find save button, assuming feature was already saved")
-            return utils.constants.ADD_FEATURE_ALREADY_ADDED
+            self.logger.error(" > Unable to find save button")
+            return utils.constants.ADD_FEATURE_UNKNOWN_ERROR
         save_button.click()
         if list_add == utils.constants.LIST_STARRED_PLACES:
             data_index = 2
