@@ -77,6 +77,7 @@ class SavedPlacesImporter:
         # Choices "Main Menu"
         # Add city
         # Add airport
+        # Add point of interest
         # Exit
         CHOICE_CITY = "CITY"
         CHOICE_AIRPORT = "AIRPORT"
