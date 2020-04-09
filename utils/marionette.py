@@ -95,7 +95,7 @@ class MarionetteHelper:
         """
         self.client.navigate(url)
         try:
-            saved_button = Wait(self.client, timeout=10).until(
+            saved_button = Wait(self.client, timeout=1).until(
                 expected.element_present(By.CSS_SELECTOR, "[data-value='Saved']")
             )
             self.logger.info(" > Feature was already saved")
